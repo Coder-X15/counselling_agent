@@ -173,6 +173,7 @@ class AIAgent:
         # 1. Separate out the keywords from the user input
         # 2. Use the keywords to search out relevant chat instances and add them back in
         
+        # whole logic put in a try-except block to prevent running into errors upon interpreting the intent wrongly
         try:
             # step 1
             response = self.client.models.generate_content(
