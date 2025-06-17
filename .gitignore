@@ -1,0 +1,6 @@
+./__pycahce__
+./.pytestcache
+./agent/.env
+./agent/__pycache__
+./tests/__pycache__
+./cache/*.cache
