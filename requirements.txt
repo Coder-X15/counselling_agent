@@ -1,0 +1,5 @@
+google-genai
+dotenv
+pandas
+fsspec
+huggingface_hub
