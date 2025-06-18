@@ -4,3 +4,4 @@
 ./agent/__pycache__
 ./tests/__pycache__
 ./cache/*.cache
+./venv
