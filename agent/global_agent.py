@@ -130,8 +130,28 @@ class AIAgent:
                     ),
             )
         
+        # a mock function call to show that a request for running some soothing music has been received
+        # the function has to receive the name of the song/ audio file in string
+        
+        self.soothing_music_tool = types.FunctionDeclaration(
+                name = 'playSong',
+                description = "Play a soothing song from the user's favourite artist to relax the user",
+                parameters = types.Schema(
+                        type = 'OBJECT',
+                        properties = {
+                            'song_description': types.Schema(
+                                type = 'STRING',
+                                description= 'The name of the song alongside the artist\'s name',
+                                ),
+                        },
+                        required = ['song_description']
+                    ),
+            )
+        
         # the actual tool
         self.experience_tool = types.Tool(function_declarations= [self.experience_tool])
+        self.soothing_music_tool = types.Tool(function_declarations= [self.soothing_music_tool])
+        
 
     def getIntent(self, user_input : str):
         # get the intent from the user input
@@ -235,21 +255,60 @@ class AIAgent:
                     In the light of the chat history, reply to the user appropriately. Speak more like a human counselor,
                     do not be too formal or robotic. Use your best judgment to decide what to say. Help the user analyze
                     their situation but do not do so like a robot. Ask questions, get more clarity regarding their
-                    condition(s). Use shorter dialogues and ask questions when necessary.
+                    condition(s). Use shorter dialogues and ask questions when necessary. If you ever feeling like turning
+                    on the stereo for some soothing music will help, find from the user what song they think might help in
+                    soothing the pain and suggest that you're gonna do it, but in a suggestion-like manner, and then call 
+                    the playSong function by passing the argument as "<Song name>" by <Artist>. Remember, the song is to soothe 
+                    the person, so only ask them if it is helping them and not anything more, and also to choose a soothing track 
+                    and not anything depressing. Focus on the issue at hand and ask them questions to get more clarity.
                 ''',
+                tools = [self.soothing_music_tool]
             )
         )
 
         # append this response to the chat history
-        self.chat_history.append(
-            types.Content(
-                role = 'assistant',
-                parts = [types.Part.from_text(text = response.text)]
+        if response.candidates[0].content.parts[0].text is not None:
+            self.chat_history.append(
+                types.Content(
+                    role = 'assistant',
+                    parts = [types.Part.from_text(text = response.text)]
+                )
             )
-        )
+        else:
+            self.chat_history.append(
+                types.Content(
+                    role = 'assistant',
+                    parts = [types.Part.from_text(text = "*Plays the song*")]
+                )
+            )
         
-        return response.text
 
+        function_call_part = response.function_calls
+        if function_call_part is not None:
+            function_call_part = response.function_calls[0]
+            args =  function_call_part.args['song_description']
+            print(f"The user might love to listen to the song:{args}")
+
+
+        ## music_prompt = self.client.models.generate_content(
+        ##    model=self.model,
+        ##    contents = [self.chat_history[-1]],
+        ##    config = types.GenerateContentConfig(
+        ##    tools = [self.soothing_music_tool]
+        ##    )
+        ## )
+        
+        ## if music_prompt.function_calls is None:
+        ##    pass
+        ## else:
+        ##    function_call_part = music_prompt.function_calls[0]
+        ##    args =  function_call_part.args['song_description']
+        ##    print(f"The user might love to listen to the song:{args}")
+        if response.text is not None:
+            return response.text
+        else:
+            return self.handleNone()
+        
     def run(self):
         # run the system
         # flow:
