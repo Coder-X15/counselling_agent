@@ -4,6 +4,7 @@
 
 from google import genai
 from google.genai import types
+from .mcp_client import *
 import dotenv
 import pandas as pd
 import os
@@ -12,48 +13,6 @@ import pickle
 
 # loading resources
 mental_health_df = pd.read_json("hf://datasets/Amod/mental_health_counseling_conversations/combined_dataset.json", lines=True)
-
-# We'll check if cache of
-if not os.path.exists('./cache'):
-    os.mkdir('./cache')
-
-# function to write cache from an array containing indices of frequently accessed records
-def write_cache(indices: list):
-    # create the filename using the current date in the current timezone
-    # CHECKS:
-    if any([type(k) != int for k in indices]):
-        raise TypeError("Integers only should be used as indices}.")
-    elif indices == []:
-        raise ValueError("List of indices cannot be empty.")
-    
-    filename = f'cache/{datetime.now(timezone.utc).strftime("%Y%m%d")}.cache'
-    with open(filename, 'ab') as f:
-        pickle.dump(mental_health_df.iloc[indices], f)
-
-# search dialogues with keywords
-# logic : check for the keywords in both columns ('Context' and 'Response' columns) and get
-# the indices of the matching conversations
-def search_conversations(keywords: list):
-    # create a list to store the indices of matching conversations
-    # CHECKS:
-    if any([k == '' for k in keywords]):
-        raise ValueError("Empty keywords are not allowed.")
-    elif any([type(k) != str for k in keywords]):
-        raise TypeError("Keywords must be strings.")
-    
-    indices = []
-    # iterate over each keyword
-    for keyword in keywords:
-        # iterate over each row in the dataframe
-        for index, row in mental_health_df.iterrows():
-            # check if the keyword is present in the 'Context' or 'Response' column
-            if keyword in row['Context'] or keyword in row['Response']:
-                # if the keyword is found, add the index to the list
-                indices.append(index)
-                # remove duplicates from the list of indices
-                indices = list(set(indices))
-    # return the relevant conversational items to the user as a sub-dataframe
-    return mental_health_df.iloc[indices]
 
 
 # laoding environement configs
@@ -135,17 +94,7 @@ class AIAgent:
         
         self.soothing_music_tool = types.FunctionDeclaration(
                 name = 'playSong',
-                description = "Play a soothing song from the user's favourite artist to relax the user",
-                parameters = types.Schema(
-                        type = 'OBJECT',
-                        properties = {
-                            'song_description': types.Schema(
-                                type = 'STRING',
-                                description= 'The name of the song alongside the artist\'s name',
-                                ),
-                        },
-                        required = ['song_description']
-                    ),
+                description = "Play a soothing song",
             )
         
         # the actual tool
@@ -211,17 +160,14 @@ class AIAgent:
             try:
                 # get the arguments to the function
                 args = function_call_part.args['keywords']
-                results = search_conversations(args).to_dict().values()
-                results = list(results)[1]
-                results = list(results.values())
-                results = " ".join(results)
+                results = fetch_snippets(args)
                 results =  self.client.models.generate_content(
                 model=self.model,
                 contents = [types.Part.from_text(text = results)],
                 config = types.GenerateContentConfig(
                     system_instruction= '''Summarize the conversation snips.'''
+                    )
                 )
-            )
                 results = {'results': results}
             except:
                 raise Exception("Unable to advise you, pal.")
@@ -256,39 +202,44 @@ class AIAgent:
                     do not be too formal or robotic. Use your best judgment to decide what to say. Help the user analyze
                     their situation but do not do so like a robot. Ask questions, get more clarity regarding their
                     condition(s). Use shorter dialogues and ask questions when necessary. If you ever feeling like turning
-                    on the stereo for some soothing music will help, find from the user what song they think might help in
-                    soothing the pain and suggest that you're gonna do it, but in a suggestion-like manner, and then call 
-                    the playSong function by passing the argument as "<Song name>" by <Artist>. Remember, the song is to soothe 
-                    the person, so only ask them if it is helping them and not anything more, and also to choose a soothing track 
-                    and not anything depressing. Focus on the issue at hand and ask them questions to get more clarity.
+                    on the stereo for some soothing music will help or if the user requests it directly, suggest that you'll play some music for them and
+                    play a song from the available song by calling the "playSong()" function. Remember, the song is to soothe the person, so only ask them if 
+                    it is helping them and not anything more.
                 ''',
                 tools = [self.soothing_music_tool]
             )
         )
 
         # append this response to the chat history
-        if response.candidates[0].content.parts[0].text is not None:
-            self.chat_history.append(
-                types.Content(
-                    role = 'assistant',
-                    parts = [types.Part.from_text(text = response.text)]
+
+        if response.function_calls is not None:
+            if response.candidates[0].content.parts[0].text is not None:
+                self.chat_history.append(
+                    types.Content(
+                        role = 'assistant',
+                        parts = [types.Part.from_text(text = response.candidates[0].content.parts[0].text)]
+                    )
                 )
-            )
+                self.chat_history.append(
+                    types.Content(
+                        role = 'assistant',
+                        parts = [types.Part.from_text(text = "*Plays the song*")]
+                    )
+                )
+
         else:
             self.chat_history.append(
-                types.Content(
-                    role = 'assistant',
-                    parts = [types.Part.from_text(text = "*Plays the song*")]
+                    types.Content(
+                        role = 'assistant',
+                        parts = [types.Part.from_text(text = response.candidates[0].content.parts[0].text)]
+                    )
                 )
-            )
         
-
         function_call_part = response.function_calls
         if function_call_part is not None:
-            function_call_part = response.function_calls[0]
-            args =  function_call_part.args['song_description']
-            print(f"The user might love to listen to the song:{args}")
-
+            # we let the music player widget appear
+            print("Setting the music player to visible")
+            set_state(True)
 
         ## music_prompt = self.client.models.generate_content(
         ##    model=self.model,
@@ -327,6 +278,18 @@ class AIAgent:
                 self.handleHelp()
                 print(f"Assistant: {self.handleNone()}")
 
+    def run_once(self, query: str):
+        # run the system once
+        intent = self.getIntent(query)
+        if 'None' in intent:
+            return {'assistant': self.handleNone()}
+        elif 'Fallback' in intent:
+            return {'assistant': self.handleFallback()}
+        elif 'Help' in intent:
+            self.handleHelp()
+            return {'assistant':self.handleNone()}
+
+model = AIAgent() # resource for the app to access
 if __name__ == "__main__":
     # create an instance of the agent
     agent = AIAgent()
