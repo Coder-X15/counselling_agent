@@ -32,7 +32,7 @@ class StreamlitUIUpdater:
         # if the audio player has to be visible, make it visible:
         try:
             if st.session_state.show_audio_player:
-                st.audio('./' + path)
+                st.audio('./' + path, format='audio/wav')
         except Exception as e:
             st.write("Error displaying audio player:", e)
             st.session_state.show_audio_player = False
