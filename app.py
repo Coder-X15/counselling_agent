@@ -30,9 +30,14 @@ class StreamlitUIUpdater:
             set_state(False)
 
         # if the audio player has to be visible, make it visible:
-        if st.session_state.show_audio_player:
-            st.audio('./' + path, format="audio/mp3", autoplay=True, loop=True)
-            
+        try:
+            if st.session_state.show_audio_player:
+                st.audio('./' + path, format="audio/mp3", autoplay=True, loop=True)
+        except Exception as e:
+            st.write("Error displaying audio player:", e)
+            st.session_state.show_audio_player = False
+            set_state(False)
+
         # print messages from chat history (i.e., the `messages` variable)
         for message in st.session_state.messages:
             with st.chat_message(message['role']):
