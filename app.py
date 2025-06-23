@@ -4,10 +4,18 @@ from agent.mcp_client import *
 from agent.helper_functions import *
 import os
 
+
+def cleanup():
+    set_state(False)
+
+
 class StreamlitUIUpdater:
     def __init__(self):
         st.write("# Welcome!")
         st.write(f"Song that will be playing:{path}")
+        # Register cleanup on session end (Streamlit >=1.32.0)
+        if hasattr(st.session_state, "on_session_end"):
+            st.session_state.on_session_end(cleanup)
 
     def mainloop(self, model = model):
         # initialize session variable `messages` for displaying messages
