@@ -200,7 +200,7 @@ class AIAgent:
                     their situation but do not do so like a robot. Ask questions, get more clarity regarding their
                     condition(s). Use shorter dialogues and ask questions when necessary. If you ever feeling like turning
                     on the stereo for some soothing music will help or if the user requests it directly, suggest that you'll play some music for them and
-                    play a song from the available song by calling the "playSong()" function. Remember, the song is to soothe the person, so only ask them if 
+                    play a song from the available song by calling the "playSong()" function parallely. Remember, the song is to soothe the person, so only ask them if 
                     it is helping them and not anything more.
                 ''',
                 tools = [self.soothing_music_tool]
@@ -210,19 +210,25 @@ class AIAgent:
         # append this response to the chat history
 
         if response.function_calls is not None:
-            if response.candidates[0].content.parts[0].text is not None:
-                self.chat_history.append(
-                    types.Content(
-                        role = 'assistant',
-                        parts = [types.Part.from_text(text = response.candidates[0].content.parts[0].text)]
-                    )
-                )
-                self.chat_history.append(
-                    types.Content(
-                        role = 'assistant',
-                        parts = [types.Part.from_text(text = "*Plays the song*")]
-                    )
-                )
+            function_call_part = response.function_calls[0]
+            self.chat_history.append(function_call_part)
+
+            # construct a function response part
+            result = {'results': True} # a mock result to show that the function was called
+            function_response_part = types.Part.from_function_response(
+                name=function_call_part.name,
+                response=result
+            )
+
+            function_response_content = types.Content(
+                role='tool', parts=[function_response_part]
+            )
+
+            self.chat_history.append(function_response_content)
+
+            # we let the music player widget appear
+            print("Setting the music player to visible")
+            set_state(True)
 
         else:
             self.chat_history.append(
@@ -231,12 +237,6 @@ class AIAgent:
                         parts = [types.Part.from_text(text = response.candidates[0].content.parts[0].text)]
                     )
                 )
-        
-        function_call_part = response.function_calls
-        if function_call_part is not None:
-            # we let the music player widget appear
-            print("Setting the music player to visible")
-            set_state(True)
 
         ## music_prompt = self.client.models.generate_content(
         ##    model=self.model,
