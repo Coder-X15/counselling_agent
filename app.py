@@ -7,6 +7,7 @@ import os
 class StreamlitUIUpdater:
     def __init__(self):
         st.write("# Welcome!")
+        st.write(f"Song that will be playing:{path}")
 
     def mainloop(self, model = model):
         # initialize session variable `messages` for displaying messages
@@ -30,7 +31,6 @@ class StreamlitUIUpdater:
 
         # if the audio player has to be visible, make it visible:
         if st.session_state.show_audio_player:
-            st.write(f"Now playing:{path}")
             if path and os.path.exists(path):
                 with open(path, "rb") as audio_file:
                     st.audio(audio_file, format="audio/mp3", autoplay=True, loop=True)
