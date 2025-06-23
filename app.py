@@ -59,8 +59,9 @@ class StreamlitUIUpdater:
 
 if __name__ == "__main__":
     app = StreamlitUIUpdater()
-    try:
-        app.mainloop(model=model)
-    except Exception as e:
-        st.write(e.args)
-        set_state(False)
+    app.mainloop(model=model)
+    # try:
+    #    app.mainloop(model=model)
+    #except Exception as e:
+    #    st.write(e.args)
+    #    set_state(False)
