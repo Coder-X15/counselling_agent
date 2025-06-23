@@ -30,6 +30,7 @@ class StreamlitUIUpdater:
 
         # if the audio player has to be visible, make it visible:
         if st.session_state.show_audio_player:
+            st.write(f"Now playing:{path}")
             if path and os.path.exists(path):
                 with open(path, "rb") as audio_file:
                     st.audio(audio_file, format="audio/mp3", autoplay=True, loop=True)
