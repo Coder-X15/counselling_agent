@@ -230,7 +230,7 @@ class AIAgent:
             # we let the music player widget appear
             # simulate a response to avoid errors
             mock_response = types.Content(
-                role='tool',
+                role='assistant',
                 parts=[types.Part.from_text(text="Playing soothing music...")]
             )
             self.chat_history.append(mock_response)
