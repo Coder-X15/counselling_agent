@@ -15,9 +15,11 @@ def load_assets():
         for file in files:
             if file.endswith('.mp3'):
                 abs_path = os.path.join(root, file)
-                assets.append(abs_path)
+                rel_path = os.path.relpath(abs_path, os.getcwd())
+                assets.append({"abs": abs_path, "rel": rel_path})
     return assets
 
 # to obtain a random asset
 assets = load_assets()
-path = random.choice(assets) if assets else None
+asset = random.choice(assets) if assets else None
+path = asset["rel"] if asset else None  # Use relative path for Streamlit
