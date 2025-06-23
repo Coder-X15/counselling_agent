@@ -11,9 +11,6 @@ import os
 from datetime import datetime, timezone
 import pickle
 
-# loading resources
-mental_health_df = pd.read_json("hf://datasets/Amod/mental_health_counseling_conversations/combined_dataset.json", lines=True)
-
 
 # laoding environement configs
 dotenv.load_dotenv()
