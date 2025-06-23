@@ -56,6 +56,3 @@ class StreamlitUIUpdater:
             # step 3: add response to chat history
             st.chat_message("assistant").markdown(response)
             st.session_state.messages.append({"role":"assistant","content":response})
-
-
-app = StreamlitUIUpdater()
