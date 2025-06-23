@@ -42,6 +42,9 @@ class AIAgent:
             http_options=types.HttpOptions(api_version='v1alpha')
         )
 
+        # music player state
+        self.music_player_state = False
+
         # model to be used
         self.model = 'gemini-2.0-flash-001'
 
@@ -235,7 +238,7 @@ class AIAgent:
             )
             self.chat_history.append(mock_response)
             print("Setting the music player to visible")
-            set_state(True)
+            self.music_player_state = True
 
         else:
             self.chat_history.append(
