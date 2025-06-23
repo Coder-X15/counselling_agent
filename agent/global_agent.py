@@ -92,6 +92,7 @@ class AIAgent:
         self.soothing_music_tool = types.FunctionDeclaration(
                 name = 'playSong',
                 description = "Play a soothing song",
+                parameters=None
             )
         
         # the actual tool
@@ -210,23 +211,29 @@ class AIAgent:
         # append this response to the chat history
 
         if response.function_calls is not None:
-            function_call_part = response.function_calls[0]
-            self.chat_history.append(function_call_part)
+            ## function_call_part = response.function_calls[0]
+            ## self.chat_history.append(function_call_part)
 
             # construct a function response part
-            result = {'results': True} # a mock result to show that the function was called
-            function_response_part = types.Part.from_function_response(
-                name=function_call_part.name,
-                response=result
-            )
+            ## result = {'results': True} # a mock result to show that the function was called
+            ## function_response_part = types.Part.from_function_response(
+            ##    name=function_call_part.name,
+            ##    response=result
+            ##)
 
-            function_response_content = types.Content(
-                role='tool', parts=[function_response_part]
-            )
+            ## function_response_content = types.Content(
+            ##    role='tool', parts=[function_response_part]
+            ##)
 
-            self.chat_history.append(function_response_content)
+            ## self.chat_history.append(function_response_content)
 
             # we let the music player widget appear
+            # simulate a response to avoid errors
+            mock_response = types.Content(
+                role='tool',
+                parts=[types.Part.from_text(text="Playing soothing music...")]
+            )
+            self.chat_history.append(mock_response)
             print("Setting the music player to visible")
             set_state(True)
 
