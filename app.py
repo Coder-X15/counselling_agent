@@ -2,6 +2,7 @@ import streamlit as st
 from agent.global_agent import *
 from agent.mcp_client import *
 from agent.helper_functions import *
+import os
 
 class StreamlitUIUpdater:
     def __init__(self):
@@ -29,7 +30,10 @@ class StreamlitUIUpdater:
 
         # if the audio player has to be visible, make it visible:
         if st.session_state.show_audio_player:
-            st.audio(path, format="audio/mp3", autoplay=True, loop=True)
+            if path and os.path.exists(path):
+                st.audio(path, format="audio/mp3", autoplay=True, loop=True)
+            else:
+                st.warning("Audio file not found or path is not set.")
 
         # print messages from chat history (i.e., the `messages` variable)
         for message in st.session_state.messages:
